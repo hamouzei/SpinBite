@@ -30,20 +30,31 @@ export default function CustomersPage() {
         .order("created_at", { ascending: false });
 
       if (data) {
-        // Fetch spin counts for each customer
         const enriched: CustomerRow[] = await Promise.all(
           data.map(async (c) => {
+            // Count total spins
             const { count: totalSpins } = await supabase
               .from("spins").select("id", { count: "exact", head: true })
               .eq("customer_id", c.id);
-            const { count: claimedCount } = await supabase
-              .from("spins").select("id, claims!inner(claimed)", { count: "exact", head: true })
-              .eq("customer_id", c.id)
-              .eq("claims.claimed", true);
+
+            // Count rewards won — get all spin IDs, then count claims for those spins
+            const { data: customerSpins } = await supabase
+              .from("spins").select("id")
+              .eq("customer_id", c.id);
+
+            let rewardsWon = 0;
+            if (customerSpins && customerSpins.length > 0) {
+              const spinIds = customerSpins.map((s: { id: string }) => s.id);
+              const { count: claimCount } = await supabase
+                .from("claims").select("id", { count: "exact", head: true })
+                .in("spin_id", spinIds);
+              rewardsWon = claimCount || 0;
+            }
+
             return {
               ...c,
               total_spins: totalSpins || 0,
-              rewards_won: claimedCount || 0,
+              rewards_won: rewardsWon,
             };
           })
         );

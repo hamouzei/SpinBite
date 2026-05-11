@@ -35,12 +35,25 @@ export default function DashboardPage() {
       try {
         const today = new Date().toISOString().split("T")[0];
 
-        const [spinsRes, todaySpinsRes, customersRes, claimsRes] = await Promise.all([
+        const [spinsRes, todaySpinsRes, customersRes] = await Promise.all([
           supabase.from("spins").select("id", { count: "exact", head: true }).eq("restaurant_id", RESTAURANT_ID),
           supabase.from("spins").select("id", { count: "exact", head: true }).eq("restaurant_id", RESTAURANT_ID).gte("created_at", today),
           supabase.from("customers").select("id", { count: "exact", head: true }).eq("restaurant_id", RESTAURANT_ID),
-          supabase.from("claims").select("id", { count: "exact", head: true }).eq("claimed", true),
         ]);
+
+        // Count rewards claimed — get spins for this restaurant, then count their claims
+        const { data: restaurantSpins } = await supabase
+          .from("spins").select("id")
+          .eq("restaurant_id", RESTAURANT_ID);
+
+        let rewardsClaimed = 0;
+        if (restaurantSpins && restaurantSpins.length > 0) {
+          const spinIds = restaurantSpins.map((s: { id: string }) => s.id);
+          const { count: claimCount } = await supabase
+            .from("claims").select("id", { count: "exact", head: true })
+            .in("spin_id", spinIds);
+          rewardsClaimed = claimCount || 0;
+        }
 
         // Top reward
         const { data: topPrize } = await supabase
@@ -68,7 +81,7 @@ export default function DashboardPage() {
           totalSpins: spinsRes.count || 0,
           todaySpins: todaySpinsRes.count || 0,
           totalCustomers: customersRes.count || 0,
-          rewardsClaimed: claimsRes.count || 0,
+          rewardsClaimed,
           topReward,
         });
       } catch (err) {
