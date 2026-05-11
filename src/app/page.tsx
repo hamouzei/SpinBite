@@ -1,65 +1,212 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { motion } from "framer-motion";
+import Link from "next/link";
+import FloatingParticles from "@/components/particles/FloatingParticles";
+
+const features = [
+  {
+    emoji: "🎁",
+    title: "Real Rewards",
+    description: "Win actual food items — burgers, pizzas, drinks and more!",
+  },
+  {
+    emoji: "⚡",
+    title: "Instant Wins",
+    description: "Spin the wheel and win instantly. No waiting, no hassle.",
+  },
+  {
+    emoji: "✨",
+    title: "Fast Claiming",
+    description: "Show your code to the cashier and enjoy your reward.",
+  },
+];
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.3,
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 30 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } },
+};
+
+export default function LandingPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="relative min-h-screen overflow-hidden">
+      {/* Background effects */}
+      <div className="animated-gradient-bg" />
+      <FloatingParticles count={12} />
+
+      {/* Hero Section */}
+      <section className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
+        {/* Decorative wheel preview */}
+        <motion.div
+          className="relative mb-8"
+          initial={{ opacity: 0, scale: 0.6, rotate: -30 }}
+          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 relative">
+            {/* Rotating wheel graphic */}
+            <div className="absolute inset-0 rounded-full animate-spin-slow opacity-80">
+              <svg viewBox="0 0 200 200" className="w-full h-full">
+                {[0, 1, 2, 3, 4, 5].map((i) => {
+                  const startAngle = i * 60 - 90;
+                  const endAngle = startAngle + 60;
+                  const startRad = (startAngle * Math.PI) / 180;
+                  const endRad = (endAngle * Math.PI) / 180;
+                  const r = 90;
+                  const cx = 100;
+                  const cy = 100;
+                  return (
+                    <path
+                      key={i}
+                      d={`M${cx},${cy} L${cx + r * Math.cos(startRad)},${cy + r * Math.sin(startRad)} A${r},${r} 0 0 1 ${cx + r * Math.cos(endRad)},${cy + r * Math.sin(endRad)} Z`}
+                      fill={
+                        i % 2 === 0
+                          ? "rgba(255, 107, 0, 0.6)"
+                          : "rgba(26, 26, 36, 0.8)"
+                      }
+                      stroke="rgba(255,255,255,0.08)"
+                      strokeWidth="0.5"
+                    />
+                  );
+                })}
+                <circle cx="100" cy="100" r="14" fill="var(--accent-primary)" />
+              </svg>
+            </div>
+            {/* Glow behind wheel */}
+            <div className="absolute inset-[-20px] rounded-full bg-[var(--accent-primary)] opacity-15 blur-3xl" />
+          </div>
+        </motion.div>
+
+        {/* Headlines */}
+        <motion.h1
+          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 leading-tight"
+          style={{ fontFamily: "'Satoshi', sans-serif" }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <span className="gradient-accent-text">Spin The Wheel</span>
+          <br />
+          <span className="text-white">Win Real Rewards</span>
+        </motion.h1>
+
+        <motion.p
+          className="text-lg sm:text-xl text-[var(--text-secondary)] mb-8 max-w-md"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+        >
+          Get a chance to win free food, drinks and discounts every day! 🍕🥤
+        </motion.p>
+
+        {/* CTA Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.7 }}
+        >
+          <Link href="/register" className="btn-primary text-lg px-10 py-4">
+            🎰 Start Spinning
+          </Link>
+        </motion.div>
+
+        {/* Scroll indicator */}
+        <motion.div
+          className="absolute bottom-8 left-1/2 -translate-x-1/2"
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <div className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-1.5">
+            <div className="w-1.5 h-3 rounded-full bg-[var(--accent-primary)]" />
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Features Section */}
+      <section className="relative z-10 px-6 py-24 max-w-5xl mx-auto">
+        <motion.h2
+          className="text-3xl sm:text-4xl font-bold text-center mb-16"
+          style={{ fontFamily: "'Satoshi', sans-serif" }}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          How It <span className="gradient-accent-text">Works</span>
+        </motion.h2>
+
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+        >
+          {features.map((feature, i) => (
+            <motion.div
+              key={i}
+              variants={item}
+              className="card-glass rounded-2xl p-8 text-center group"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+              <div className="text-5xl mb-5 transition-transform duration-300 group-hover:scale-110">
+                {feature.emoji}
+              </div>
+              <h3
+                className="text-xl font-bold mb-3"
+                style={{ fontFamily: "'Satoshi', sans-serif" }}
+              >
+                {feature.title}
+              </h3>
+              <p className="text-[var(--text-secondary)] text-sm leading-relaxed">
+                {feature.description}
+              </p>
+            </motion.div>
+          ))}
+        </motion.div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="relative z-10 px-6 py-24 text-center">
+        <motion.div
+          className="max-w-lg mx-auto"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+        >
+          <h2
+            className="text-3xl sm:text-4xl font-bold mb-4"
+            style={{ fontFamily: "'Satoshi', sans-serif" }}
+          >
+            Ready to <span className="gradient-accent-text">Win</span>?
+          </h2>
+          <p className="text-[var(--text-secondary)] mb-8">
+            It only takes 10 seconds. Register and spin to win real food
+            rewards today.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+          <Link href="/register" className="btn-primary text-lg px-10 py-4">
+            🎰 Start Spinning
+          </Link>
+        </motion.div>
+      </section>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-[var(--border-subtle)] py-8 px-6 text-center">
+        <p className="text-sm text-[var(--text-tertiary)]">
+          © {new Date().getFullYear()} SpinBite. All rights reserved.
+        </p>
+      </footer>
+    </main>
   );
 }
