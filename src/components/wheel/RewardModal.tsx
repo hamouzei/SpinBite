@@ -27,31 +27,75 @@ export default function RewardModal({
     if (open && result && !confettiFired.current) {
       confettiFired.current = true;
 
-      // Fire confetti burst
-      const duration = 3000;
-      const end = Date.now() + duration;
+      const titleLower = result.prize_title.toLowerCase();
+      const isWin = !titleLower.includes("try again") && !titleLower.includes("nothing");
 
-      const frame = () => {
-        confetti({
-          particleCount: 3,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0, y: 0.7 },
-          colors: ["#FF6B00", "#FFB800", "#FF8A00", "#22C55E"],
-        });
-        confetti({
-          particleCount: 3,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1, y: 0.7 },
-          colors: ["#FF6B00", "#FFB800", "#FF8A00", "#22C55E"],
-        });
-
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
+      // Play sound
+      try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContext) {
+          const ctx = new AudioContext();
+          if (isWin) {
+            // Happy arpeggio (C major)
+            [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+              const osc = ctx.createOscillator();
+              const gainNode = ctx.createGain();
+              osc.type = "sine";
+              osc.frequency.value = freq;
+              gainNode.gain.setValueAtTime(0, ctx.currentTime + i * 0.1);
+              gainNode.gain.linearRampToValueAtTime(0.2, ctx.currentTime + i * 0.1 + 0.05);
+              gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.1 + 0.3);
+              osc.connect(gainNode);
+              gainNode.connect(ctx.destination);
+              osc.start(ctx.currentTime + i * 0.1);
+              osc.stop(ctx.currentTime + i * 0.1 + 0.3);
+            });
+          } else {
+            // Womp womp (descending tone)
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(300, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.5);
+            gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.5);
+          }
         }
-      };
-      frame();
+      } catch (e) {
+        // Ignore audio errors
+      }
+
+      if (isWin) {
+        // Fire confetti burst
+        const duration = 3000;
+        const end = Date.now() + duration;
+
+        const frame = () => {
+          confetti({
+            particleCount: 3,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0, y: 0.7 },
+            colors: ["#FF6B00", "#FFB800", "#FF8A00", "#22C55E"],
+          });
+          confetti({
+            particleCount: 3,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1, y: 0.7 },
+            colors: ["#FF6B00", "#FFB800", "#FF8A00", "#22C55E"],
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        };
+        frame();
+      }
     }
 
     if (!open) {
@@ -63,10 +107,11 @@ export default function RewardModal({
 
   // Get emoji for the prize
   const titleLower = result.prize_title.toLowerCase();
+  const isWin = !titleLower.includes("try again") && !titleLower.includes("nothing");
   const emoji =
     Object.entries(PRIZE_EMOJI).find(([key]) =>
       titleLower.includes(key)
-    )?.[1] ?? PRIZE_EMOJI.default;
+    )?.[1] ?? (isWin ? PRIZE_EMOJI.default : "😢");
 
   return (
     <AnimatePresence>
@@ -121,7 +166,7 @@ export default function RewardModal({
                   {emoji}
                 </motion.div>
 
-                {/* Congratulations */}
+                {/* Congratulations or Better luck next time */}
                 <motion.h2
                   className="text-2xl font-bold mb-1"
                   style={{ fontFamily: "'Satoshi', sans-serif" }}
@@ -129,55 +174,59 @@ export default function RewardModal({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
                 >
-                  🎉 You Won!
+                  {isWin ? "🎉 You Won!" : "Oh no!"}
                 </motion.h2>
 
                 {/* Prize title */}
                 <motion.p
-                  className="text-xl font-bold gradient-accent-text mb-6"
+                  className={`text-xl font-bold mb-6 ${isWin ? "gradient-accent-text" : "text-[var(--text-secondary)]"}`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
                 >
-                  {result.prize_title}
+                  {isWin ? result.prize_title : "Better luck next time"}
                 </motion.p>
 
-                {/* Claim code */}
-                <motion.div
-                  className="glass rounded-xl p-4 mb-6"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  <p className="text-xs text-[var(--text-secondary)] uppercase tracking-widest mb-2">
-                    Your Claim Code
-                  </p>
-                  <p
-                    className="text-3xl font-black tracking-[0.15em] text-[var(--accent-primary)]"
-                    style={{ fontFamily: "'Satoshi', sans-serif" }}
-                  >
-                    {result.claim_code}
-                  </p>
-                  <p className="text-xs text-[var(--text-tertiary)] mt-2">
-                    Show this code to the cashier
-                  </p>
-                </motion.div>
+                {/* Claim code (only if won) */}
+                {isWin && (
+                  <>
+                    <motion.div
+                      className="glass rounded-xl p-4 mb-6"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                    >
+                      <p className="text-xs text-[var(--text-secondary)] uppercase tracking-widest mb-2">
+                        Your Claim Code
+                      </p>
+                      <p
+                        className="text-3xl font-black tracking-[0.15em] text-[var(--accent-primary)]"
+                        style={{ fontFamily: "'Satoshi', sans-serif" }}
+                      >
+                        {result.claim_code}
+                      </p>
+                      <p className="text-xs text-[var(--text-tertiary)] mt-2">
+                        Show this code to the cashier
+                      </p>
+                    </motion.div>
 
-                {/* Expiry */}
-                <motion.p
-                  className="text-xs text-[var(--text-tertiary)] mb-6"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.7 }}
-                >
-                  Expires:{" "}
-                  {new Date(result.expires_at).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                </motion.p>
+                    {/* Expiry */}
+                    <motion.p
+                      className="text-xs text-[var(--text-tertiary)] mb-6"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.7 }}
+                    >
+                      Expires:{" "}
+                      {new Date(result.expires_at).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </motion.p>
+                  </>
+                )}
 
                 {/* Actions */}
                 <motion.div

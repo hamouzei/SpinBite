@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { RESTAURANT_ID } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
-import { Search } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 
 interface CustomerRow {
   id: string;
@@ -65,6 +65,30 @@ export default function CustomersPage() {
     fetchCustomers();
   }, []);
 
+  const deleteCustomer = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this customer? Their spins and claims will also be deleted.")) return;
+    
+    const { error } = await supabase.from("customers").delete().eq("id", id);
+    if (error) {
+      alert("Failed to delete customer.");
+      console.error(error);
+    } else {
+      setCustomers((prev) => prev.filter((c) => c.id !== id));
+    }
+  };
+
+  const clearAllCustomers = async () => {
+    if (!window.confirm("WARNING: Are you sure you want to delete ALL customers for this restaurant? This cannot be undone.")) return;
+    
+    const { error } = await supabase.from("customers").delete().eq("restaurant_id", RESTAURANT_ID);
+    if (error) {
+      alert("Failed to clear customers.");
+      console.error(error);
+    } else {
+      setCustomers([]);
+    }
+  };
+
   const filtered = customers.filter((c) =>
     c.full_name.toLowerCase().includes(search.toLowerCase()) ||
     c.phone.includes(search)
@@ -77,11 +101,22 @@ export default function CustomersPage() {
           <h1 className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: "'Satoshi', sans-serif" }}>Customers</h1>
           <p className="text-sm text-[var(--text-secondary)] mt-1">{customers.length} registered customers</p>
         </div>
-        <div className="relative w-full sm:w-64">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
-          <input type="text" placeholder="Search by name or phone"
-            value={search} onChange={(e) => setSearch(e.target.value)}
-            className="input pl-9 text-sm" />
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
+            <input type="text" placeholder="Search by name or phone"
+              value={search} onChange={(e) => setSearch(e.target.value)}
+              className="input pl-9 text-sm" />
+          </div>
+          {customers.length > 0 && (
+            <button 
+              onClick={clearAllCustomers}
+              className="btn-secondary text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition-colors w-full sm:w-auto"
+            >
+              <Trash2 size={16} />
+              Clear All
+            </button>
+          )}
         </div>
       </div>
 
@@ -109,6 +144,7 @@ export default function CustomersPage() {
                   <th className="text-center py-3 px-4 text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Spins</th>
                   <th className="text-center py-3 px-4 text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Rewards</th>
                   <th className="text-right py-3 px-4 text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Joined</th>
+                  <th className="text-right py-3 px-4 text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -123,6 +159,15 @@ export default function CustomersPage() {
                     <td className="py-3 px-4 text-center">{c.total_spins}</td>
                     <td className="py-3 px-4 text-center text-[var(--success)]">{c.rewards_won}</td>
                     <td className="py-3 px-4 text-right text-[var(--text-tertiary)] text-xs">{formatDate(c.created_at)}</td>
+                    <td className="py-3 px-4 text-right">
+                      <button 
+                        onClick={() => deleteCustomer(c.id)}
+                        className="p-2 rounded-lg text-[var(--text-tertiary)] hover:bg-white/5 hover:text-[var(--danger)] transition-colors inline-flex"
+                        title="Delete Customer"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                   </motion.tr>
                 ))}
               </tbody>

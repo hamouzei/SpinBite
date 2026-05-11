@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useAnimation } from "framer-motion";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Prize } from "@/types/database";
 import { WHEEL_COLORS } from "@/lib/constants";
 
@@ -23,6 +23,37 @@ export default function SpinWheel({
   const controls = useAnimation();
   const [currentRotation, setCurrentRotation] = useState(0);
   const segmentAngle = 360 / prizes.length;
+  const lastTickAngle = useRef(currentRotation);
+
+  const playTickSound = useCallback(() => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+      
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.05);
+      
+      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+      
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      osc.start();
+      osc.stop(ctx.currentTime + 0.05);
+      
+      if (navigator.vibrate) {
+        navigator.vibrate(15);
+      }
+    } catch (e) {
+      // Ignore audio context errors
+    }
+  }, []);
 
   // Calculate segment paths for SVG
   const segments = useMemo(() => {
@@ -77,6 +108,8 @@ export default function SpinWheel({
     const fullRotations = 5 + Math.floor(Math.random() * 3); // 5-7 full spins
     const targetRotation =
       currentRotation + fullRotations * 360 + (360 - targetSegmentCenter);
+
+    lastTickAngle.current = currentRotation;
 
     await controls.start({
       rotate: targetRotation,
@@ -137,6 +170,16 @@ export default function SpinWheel({
       {/* Wheel SVG */}
       <motion.div
         animate={controls}
+        onUpdate={(latest) => {
+          if (typeof latest.rotate === "number") {
+            const currentSegment = Math.floor(latest.rotate / segmentAngle);
+            const lastSegment = Math.floor(lastTickAngle.current / segmentAngle);
+            if (currentSegment > lastSegment) {
+              playTickSound();
+              lastTickAngle.current = latest.rotate;
+            }
+          }
+        }}
         className="w-full h-full"
         style={{ transformOrigin: "center center" }}
       >
