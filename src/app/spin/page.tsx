@@ -10,6 +10,7 @@ import SpinWheel from "@/components/wheel/SpinWheel";
 import RewardModal from "@/components/wheel/RewardModal";
 import FloatingParticles from "@/components/particles/FloatingParticles";
 import { generateClaimCode } from "@/lib/utils";
+import { initAudio, playClickSound } from "@/lib/audio";
 
 export default function SpinPage() {
   const router = useRouter();
@@ -71,6 +72,11 @@ export default function SpinPage() {
 
   const handleSpin = useCallback(async () => {
     if (spinning || spinsRemaining <= 0 || prizes.length === 0) return;
+
+    // Initialize audio on first user gesture (required for mobile)
+    initAudio();
+    playClickSound();
+
     setError(null);
     setSpinning(true);
 
@@ -154,12 +160,12 @@ export default function SpinPage() {
   }
 
   return (
-    <main className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8 overflow-hidden">
+    <main className="relative min-h-screen min-h-[100dvh] flex flex-col items-center justify-center px-4 py-6 sm:py-8 overflow-hidden">
       <div className="animated-gradient-bg" />
       <FloatingParticles count={10} />
 
       {/* Header */}
-      <motion.div className="relative z-10 text-center mb-6"
+      <motion.div className="relative z-10 text-center mb-4 sm:mb-6"
         initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}>
         <p className="text-sm text-[var(--text-secondary)] mb-1">Welcome, {customerName}! 👋</p>
@@ -192,12 +198,12 @@ export default function SpinPage() {
       </motion.div>
 
       {/* Spin Button */}
-      <motion.div className="relative z-10 mt-8"
+      <motion.div className="relative z-10 mt-6 sm:mt-8 w-full max-w-xs px-4"
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}>
         {spinsRemaining > 0 ? (
           <button onClick={handleSpin} disabled={spinning}
-            className="btn-primary text-xl px-12 py-5 animate-pulse-glow disabled:opacity-50 disabled:animate-none">
+            className="btn-primary text-lg sm:text-xl w-full py-4 sm:py-5 animate-pulse-glow disabled:opacity-50 disabled:animate-none touch-manipulation">
             {spinning ? "Spinning..." : "🎰 SPIN!"}
           </button>
         ) : (

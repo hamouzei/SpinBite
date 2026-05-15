@@ -405,3 +405,38 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(var(--accent-primary-rgb), 0.3);
   color: white;
 }
+
+/* ===== Mobile Optimizations ===== */
+
+/* Safe area for iPhone notch/home bar */
+.safe-area-bottom {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+/* Eliminate 300ms tap delay on touch devices */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent text selection during spin interactions */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Custom breakpoint for very small phones */
+@media (min-width: 360px) {
+  .xs\:w-\[320px\] { width: 320px; }
+  .xs\:h-\[320px\] { height: 320px; }
+}
+
+/* Ensure buttons are large enough for touch targets (44px min) */
+@media (max-width: 640px) {
+  .btn-primary,
+  .btn-secondary {
+    min-height: 48px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}

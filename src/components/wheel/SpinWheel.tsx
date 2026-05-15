@@ -4,6 +4,7 @@ import { motion, useAnimation } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Prize } from "@/types/database";
 import { WHEEL_COLORS } from "@/lib/constants";
+import { playTickSound } from "@/lib/audio";
 
 interface SpinWheelProps {
   prizes: Prize[];
@@ -24,36 +25,6 @@ export default function SpinWheel({
   const [currentRotation, setCurrentRotation] = useState(0);
   const segmentAngle = 360 / prizes.length;
   const lastTickAngle = useRef(currentRotation);
-
-  const playTickSound = useCallback(() => {
-    try {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContext) return;
-      
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-      
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(800, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.05);
-      
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
-      
-      osc.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      
-      osc.start();
-      osc.stop(ctx.currentTime + 0.05);
-      
-      if (navigator.vibrate) {
-        navigator.vibrate(15);
-      }
-    } catch (e) {
-      // Ignore audio context errors
-    }
-  }, []);
 
   // Calculate segment paths for SVG
   const segments = useMemo(() => {
@@ -137,7 +108,9 @@ export default function SpinWheel({
   }, [spinning, targetIndex, spinWheel]);
 
   return (
-    <div className="relative w-[340px] h-[340px] sm:w-[380px] sm:h-[380px] md:w-[420px] md:h-[420px]">
+    <div className="relative w-[280px] h-[280px] xs:w-[320px] xs:h-[320px] sm:w-[360px] sm:h-[360px] md:w-[420px] md:h-[420px]"
+      style={{ maxWidth: "calc(100vw - 48px)", maxHeight: "calc(100vw - 48px)" }}
+    >
       {/* Outer glow ring */}
       <div className="absolute inset-[-12px] rounded-full animate-pulse-glow" />
 

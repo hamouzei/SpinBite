@@ -28,6 +28,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#0B0B0F" />
         <link
           href="https://api.fontshare.com/v2/css?f[]=satoshi@700,900&display=swap"
           rel="stylesheet"

@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import confetti from "canvas-confetti";
 import type { SpinResult } from "@/types/database";
 import { PRIZE_EMOJI } from "@/lib/constants";
+import { playWinSound, playLoseSound } from "@/lib/audio";
 
 interface RewardModalProps {
   result: SpinResult | null;
@@ -30,43 +31,11 @@ export default function RewardModal({
       const titleLower = result.prize_title.toLowerCase();
       const isWin = !titleLower.includes("try again") && !titleLower.includes("nothing");
 
-      // Play sound
-      try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioContext) {
-          const ctx = new AudioContext();
-          if (isWin) {
-            // Happy arpeggio (C major)
-            [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-              const osc = ctx.createOscillator();
-              const gainNode = ctx.createGain();
-              osc.type = "sine";
-              osc.frequency.value = freq;
-              gainNode.gain.setValueAtTime(0, ctx.currentTime + i * 0.1);
-              gainNode.gain.linearRampToValueAtTime(0.2, ctx.currentTime + i * 0.1 + 0.05);
-              gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.1 + 0.3);
-              osc.connect(gainNode);
-              gainNode.connect(ctx.destination);
-              osc.start(ctx.currentTime + i * 0.1);
-              osc.stop(ctx.currentTime + i * 0.1 + 0.3);
-            });
-          } else {
-            // Womp womp (descending tone)
-            const osc = ctx.createOscillator();
-            const gainNode = ctx.createGain();
-            osc.type = "sawtooth";
-            osc.frequency.setValueAtTime(300, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.5);
-            gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-            osc.connect(gainNode);
-            gainNode.connect(ctx.destination);
-            osc.start(ctx.currentTime);
-            osc.stop(ctx.currentTime + 0.5);
-          }
-        }
-      } catch (e) {
-        // Ignore audio errors
+      // Play sound via shared AudioContext (mobile-compatible)
+      if (isWin) {
+        playWinSound();
+      } else {
+        playLoseSound();
       }
 
       if (isWin) {
@@ -117,7 +86,7 @@ export default function RewardModal({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -132,28 +101,31 @@ export default function RewardModal({
             exit={{ opacity: 0 }}
           />
 
-          {/* Modal Card */}
+          {/* Modal Card — slides up from bottom on mobile, centered on desktop */}
           <motion.div
-            className="relative z-10 w-full max-w-sm"
-            initial={{ scale: 0.5, opacity: 0, y: 40 }}
+            className="relative z-10 w-full sm:max-w-sm"
+            initial={{ scale: 0.95, opacity: 0, y: 60 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            exit={{ scale: 0.95, opacity: 0, y: 40 }}
             transition={{
               type: "spring",
-              damping: 20,
+              damping: 25,
               stiffness: 300,
               delay: 0.1,
             }}
           >
-            <div className="card-glass rounded-[24px] p-8 text-center overflow-hidden">
+            <div className="card-glass rounded-t-[28px] sm:rounded-[24px] p-6 sm:p-8 text-center overflow-hidden safe-area-bottom">
               {/* Glow background effect */}
               <div className="absolute inset-0 gradient-radial opacity-40 pointer-events-none" />
 
               {/* Content */}
               <div className="relative z-10">
+                {/* Drag handle for mobile */}
+                <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-4 sm:hidden" />
+
                 {/* Trophy/Prize emoji */}
                 <motion.div
-                  className="text-7xl mb-4"
+                  className="text-6xl sm:text-7xl mb-3 sm:mb-4"
                   initial={{ scale: 0, rotate: -20 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{
@@ -168,7 +140,7 @@ export default function RewardModal({
 
                 {/* Congratulations or Better luck next time */}
                 <motion.h2
-                  className="text-2xl font-bold mb-1"
+                  className="text-xl sm:text-2xl font-bold mb-1"
                   style={{ fontFamily: "'Satoshi', sans-serif" }}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -179,7 +151,7 @@ export default function RewardModal({
 
                 {/* Prize title */}
                 <motion.p
-                  className={`text-xl font-bold mb-6 ${isWin ? "gradient-accent-text" : "text-[var(--text-secondary)]"}`}
+                  className={`text-lg sm:text-xl font-bold mb-5 sm:mb-6 ${isWin ? "gradient-accent-text" : "text-[var(--text-secondary)]"}`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
@@ -191,7 +163,7 @@ export default function RewardModal({
                 {isWin && (
                   <>
                     <motion.div
-                      className="glass rounded-xl p-4 mb-6"
+                      className="glass rounded-xl p-4 mb-5 sm:mb-6"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.6 }}
@@ -200,7 +172,7 @@ export default function RewardModal({
                         Your Claim Code
                       </p>
                       <p
-                        className="text-3xl font-black tracking-[0.15em] text-[var(--accent-primary)]"
+                        className="text-2xl sm:text-3xl font-black tracking-[0.15em] text-[var(--accent-primary)]"
                         style={{ fontFamily: "'Satoshi', sans-serif" }}
                       >
                         {result.claim_code}
@@ -212,7 +184,7 @@ export default function RewardModal({
 
                     {/* Expiry */}
                     <motion.p
-                      className="text-xs text-[var(--text-tertiary)] mb-6"
+                      className="text-xs text-[var(--text-tertiary)] mb-5 sm:mb-6"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.7 }}
@@ -238,7 +210,7 @@ export default function RewardModal({
                   {canSpinAgain ? (
                     <button
                       onClick={onSpinAgain}
-                      className="btn-primary w-full"
+                      className="btn-primary w-full text-base py-4"
                     >
                       🎰 Spin Again
                     </button>
@@ -247,7 +219,7 @@ export default function RewardModal({
                       Come back tomorrow! 🌙
                     </p>
                   )}
-                  <button onClick={onClose} className="btn-secondary w-full">
+                  <button onClick={onClose} className="btn-secondary w-full text-base py-4">
                     Done
                   </button>
                 </motion.div>
